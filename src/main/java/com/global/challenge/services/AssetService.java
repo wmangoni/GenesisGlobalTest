@@ -27,9 +27,17 @@ public class AssetService {
 
         List<Coin> coins = new ArrayList<>();
 
+        System.out.println("====== CSV =========");
+        csvCoins.forEach(csvCoin -> {
+            System.out.println(csvCoin.getSymbol());
+            System.out.println(csvCoin.getPrice());
+        });
+
         csvCoins.forEach(csvCoin -> {
             try {
                 Coin coin = httpRequestAdapter.getAssetId(nameCoins);
+                System.out.println("====== COIN =========");
+                System.out.println(coin.getId());
                 coin.setWalletInfo(WalletMapper.INSTANCE.toWalletInfo(csvCoin));
                 coins.add(coin);
             } catch (IOException | InterruptedException e) {
@@ -37,6 +45,7 @@ public class AssetService {
             }
         });
 
+        System.out.println("====== COINS =========");
         coins.forEach(coin -> {
             System.out.println(coin.getId());
             System.out.println(coin.getPriceUsd());

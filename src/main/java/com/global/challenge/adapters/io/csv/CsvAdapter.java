@@ -27,11 +27,11 @@ public class CsvAdapter {
         List<CsvCoin> list = new ArrayList<>();
 
         for (CSVRecord record : records) {
-            CsvCoin.builder()
+            list.add(CsvCoin.builder()
                     .symbol(record.get("symbol"))
                     .quantity(Double.valueOf(record.get("quantity")))
                     .price(Double.valueOf(record.get("price")))
-                    .build();
+                    .build());
         }
 
         return list;
