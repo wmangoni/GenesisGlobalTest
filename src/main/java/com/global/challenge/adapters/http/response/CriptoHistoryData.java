@@ -5,14 +5,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
-import java.util.List;
+import java.util.Date;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CriptoHistory {
+public class CriptoHistoryData {
 
-    private List<CriptoHistoryData> data;
+    private String priceUsd;
 
-    private Timestamp timestamp;
+    private Timestamp time;
+
+    private Date date;
 }

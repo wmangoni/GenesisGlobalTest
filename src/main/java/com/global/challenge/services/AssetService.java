@@ -1,11 +1,14 @@
 package com.global.challenge.services;
 
-import com.global.challenge.adapters.http.HttpRequestAdapter;
-import com.global.challenge.adapters.io.csv.CsvAdapter;
-import com.global.challenge.adapters.io.csv.response.CsvCoin;
+import com.global.challenge.adapters.io.csv.response.WalletCoin;
 import com.global.challenge.domain.Coin;
+import com.global.challenge.domain.CoinSymbol;
+import com.global.challenge.domain.WalletInfo;
 import com.global.challenge.helpers.AssetCalculator;
-import com.global.challenge.mappers.WalletMapper;
+import com.global.challenge.ports.outgoing.HttpPort;
+import com.global.challenge.ports.outgoing.IoPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,40 +19,42 @@ import java.util.List;
 @Service
 public class AssetService {
 
-    @Autowired
-    private HttpRequestAdapter httpRequestAdapter;
+    Logger logger = LoggerFactory.getLogger(AssetService.class);
 
     @Autowired
-    private CsvAdapter csvAdapter;
+    private HttpPort httpPort;
 
-    public String getAssetInfo(String nameCoins) throws IOException, InterruptedException {
-        List<CsvCoin> csvCoins = csvAdapter.getCsvData();
+    @Autowired
+    private IoPort ioPort;
+
+    public String getAssetInfo() throws IOException, InterruptedException {
+        List<WalletCoin> walletCoins = ioPort.getData();
 
         List<Coin> coins = new ArrayList<>();
 
-        System.out.println("====== CSV =========");
-        csvCoins.forEach(csvCoin -> {
-            System.out.println(csvCoin.getSymbol());
-            System.out.println(csvCoin.getPrice());
+        logger.info("====== CSV =========");
+
+        walletCoins.forEach(walletCoin -> {
+            logger.info("Symbol - {}", walletCoin.getSymbol());
+            logger.info("Price - {}", walletCoin.getPrice().toString());
         });
 
-        csvCoins.forEach(csvCoin -> {
+        walletCoins.forEach(walletCoin -> {
             try {
-                Coin coin = httpRequestAdapter.getAssetId(nameCoins);
-                System.out.println("====== COIN =========");
-                System.out.println(coin.getId());
-                coin.setWalletInfo(WalletMapper.INSTANCE.toWalletInfo(csvCoin));
+                Coin coin = httpPort.getAssetId(CoinSymbol.valueOf(walletCoin.getSymbol()).getValue());
+                coin.setWalletInfo(new WalletInfo(walletCoin));
                 coins.add(coin);
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         });
 
-        System.out.println("====== COINS =========");
+        logger.info("====== COINS =========");
+
         coins.forEach(coin -> {
-            System.out.println(coin.getId());
-            System.out.println(coin.getPriceUsd());
-            System.out.println(coin.getHistory().get(0).getPriceUsd());
+            logger.info("Id - {}", coin.getId());
+            logger.info("Price - {}", coin.getPriceUsd());
+            logger.info("Last Price - {}", coin.getHistory().get(0).getPriceUsd());
         });
 
         AssetCalculator calculator = new AssetCalculator(coins);
@@ -67,7 +72,7 @@ public class AssetService {
                 worstAsset,
                 worstPerformance);
 
-        System.out.println(_return);
+        logger.info("final result - {}", _return);
 
         return _return;
     }

@@ -1,12 +1,31 @@
 package com.global.challenge.domain;
 
+import com.global.challenge.adapters.http.response.CriptoCoin;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Optional;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Coin {
+
+    public Coin(final CriptoCoin.CriptoCoingData criptoCoin) {
+        this.id = criptoCoin.getId();
+        this.rank = criptoCoin.getRank();
+        this.symbol = criptoCoin.getSymbol();
+        this.name = criptoCoin.getName();
+        this.supply = criptoCoin.getSupply();
+        this.maxSupply = criptoCoin.getMaxSupply();
+        this.marketCapUsd = criptoCoin.getMarketCapUsd();
+        this.volumeUsd24Hr = criptoCoin.getVolumeUsd24Hr();
+        this.priceUsd = criptoCoin.getPriceUsd();
+        this.changePercent24Hr = criptoCoin.getChangePercent24Hr();
+        this.vwap24Hr = criptoCoin.getVwap24Hr();
+    }
 
     private String id;
 

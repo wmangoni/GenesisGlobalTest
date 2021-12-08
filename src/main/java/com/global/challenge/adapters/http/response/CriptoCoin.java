@@ -1,29 +1,47 @@
 package com.global.challenge.adapters.http.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.sql.Timestamp;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class CriptoCoin {
 
-    private String id;
+    private CriptoCoingData data;
 
-    private String rank;
+    private Timestamp timestamp;
 
-    private String symbol;
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public class CriptoCoingData {
 
-    private String name;
+        private String id;
 
-    private String supply;
+        private String rank;
 
-    private String maxSupply;
+        private String symbol;
 
-    private String marketCapUsd;
+        private String name;
 
-    private String volumeUsd24Hr;
+        private String supply;
 
-    private String priceUsd;
+        private String maxSupply;
 
-    private String changePercent24Hr;
+        private String marketCapUsd;
 
-    private String vwap24Hr;
+        private String volumeUsd24Hr;
+
+        private String priceUsd;
+
+        private String changePercent24Hr;
+
+        private String vwap24Hr;
+
+        private String explorer;
+    }
 }

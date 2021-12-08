@@ -18,7 +18,7 @@ public class AssetController {
     @GetMapping
     public String findBitcoin() {
         try {
-            return assetService.getAssetInfo("bitcoin");
+            return assetService.getAssetInfo();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
