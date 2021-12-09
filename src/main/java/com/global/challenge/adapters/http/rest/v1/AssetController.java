@@ -19,9 +19,7 @@ public class AssetController {
     public String findBitcoin() {
         try {
             return assetService.getAssetInfo();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
         return null;

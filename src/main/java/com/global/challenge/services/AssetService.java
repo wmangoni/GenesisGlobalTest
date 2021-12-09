@@ -5,8 +5,8 @@ import com.global.challenge.domain.Coin;
 import com.global.challenge.domain.CoinSymbol;
 import com.global.challenge.domain.WalletInfo;
 import com.global.challenge.helpers.AssetCalculator;
-import com.global.challenge.ports.outgoing.HttpPort;
-import com.global.challenge.ports.outgoing.IoPort;
+import com.global.challenge.ports.outgoing.HttpCoincapPort;
+import com.global.challenge.ports.outgoing.IoFileReaderPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class AssetService {
@@ -22,40 +24,43 @@ public class AssetService {
     Logger logger = LoggerFactory.getLogger(AssetService.class);
 
     @Autowired
-    private HttpPort httpPort;
+    private HttpCoincapPort httpCoincapPort;
 
     @Autowired
-    private IoPort ioPort;
+    private IoFileReaderPort ioFileReaderPort;
 
     public String getAssetInfo() throws IOException, InterruptedException {
-        List<WalletCoin> walletCoins = ioPort.getData();
+
+        Set<String> files = ioFileReaderPort.listFilesFromResources("src/main/resources");
 
         List<Coin> coins = new ArrayList<>();
 
-        logger.info("====== CSV =========");
+        for (String file : files) {
 
-        walletCoins.forEach(walletCoin -> {
-            logger.info("Symbol - {}", walletCoin.getSymbol());
-            logger.info("Price - {}", walletCoin.getPrice().toString());
-        });
-
-        walletCoins.forEach(walletCoin -> {
-            try {
-                Coin coin = httpPort.getAssetId(CoinSymbol.valueOf(walletCoin.getSymbol()).getValue());
-                coin.setWalletInfo(new WalletInfo(walletCoin));
-                coins.add(coin);
-            } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
+            if (!file.contains(".csv")) {
+                continue;
             }
-        });
 
-        logger.info("====== COINS =========");
+            List<WalletCoin> walletCoins = ioFileReaderPort.readFileData(file);
 
-        coins.forEach(coin -> {
-            logger.info("Id - {}", coin.getId());
-            logger.info("Price - {}", coin.getPriceUsd());
-            logger.info("Last Price - {}", coin.getHistory().get(0).getPriceUsd());
-        });
+            walletCoins.forEach(walletCoin -> {
+                try {
+                    Coin coin = httpCoincapPort.getAssetId(CoinSymbol.valueOf(walletCoin.getSymbol()).getValue());
+                    coin.setWalletInfo(new WalletInfo(walletCoin));
+                    coins.add(coin);
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            logger.info("====== COINS =========");
+
+            coins.forEach(coin -> {
+                logger.info("Id - {}", coin.getId());
+                logger.info("Price - {}", coin.getPriceUsd());
+                logger.info("Last Price - {}", coin.getHistory().get(0).getPriceUsd());
+            });
+        }
 
         AssetCalculator calculator = new AssetCalculator(coins);
         String total = calculator.getTotal();
@@ -64,16 +69,16 @@ public class AssetService {
         String worstAsset = calculator.getWorstAsset();
         String worstPerformance = calculator.getWorstPerformance();
 
-        var _return = String.format(
-                "total=%s,best_asset=%s,best_performance=%s,worst_asset=%s,worst_performance=%s",
+        var calculationResult = String.format(
+                "total = %s, best_asset = %s, best_performance = %s, worst_asset = %s, worst_performance = %s",
                 total,
                 bestAsset,
                 bestPerformance,
                 worstAsset,
                 worstPerformance);
 
-        logger.info("final result - {}", _return);
+        logger.info("final result - {}", calculationResult);
 
-        return _return;
+        return calculationResult;
     }
 }

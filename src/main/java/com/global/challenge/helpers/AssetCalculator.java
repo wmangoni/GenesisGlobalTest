@@ -19,13 +19,13 @@ public class AssetCalculator {
         return String.valueOf(coins
                 .stream()
                 .map(Coin::getTotal)
-                .reduce(Double::sum));
+                .reduce(Double::sum).get());
     }
 
     public String getBestAsset() {
         return coins.stream()
                 .max(Comparator.comparingDouble(Coin::getEvolution))
-                .map(Coin::getPriceUsd)
+                .map(Coin::getSymbol)
                 .get();
     }
 
@@ -39,7 +39,7 @@ public class AssetCalculator {
     public String getWorstAsset() {
         return coins.stream()
                 .min(Comparator.comparingDouble(Coin::getEvolution))
-                .map(Coin::getPriceUsd)
+                .map(Coin::getSymbol)
                 .get();
     }
 

@@ -5,9 +5,10 @@ import com.global.challenge.adapters.http.response.CriptoCoin;
 import com.global.challenge.adapters.http.response.CriptoHistory;
 import com.global.challenge.domain.Coin;
 import com.global.challenge.domain.History;
-import com.global.challenge.ports.outgoing.HttpPort;
+import com.global.challenge.ports.outgoing.HttpCoincapPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -19,25 +20,31 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class HttpRequestAdapter implements HttpPort {
+public class HttpCoincapRequestAdapter implements HttpCoincapPort {
 
-    Logger logger = LoggerFactory.getLogger(HttpRequestAdapter.class);
+    Logger logger = LoggerFactory.getLogger(HttpCoincapRequestAdapter.class);
 
+    @Autowired
     ObjectMapper objectMapper = new ObjectMapper();
 
-    private final String baseUri = "https://api.coincap.io/v2/assets/";
+    private final String BASE_URI = "https://api.coincap.io/v2/assets/";
 
     @Override
     public Coin getAssetId(final String nameCoin) throws IOException, InterruptedException {
 
-        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response;
 
-        HttpRequest request = HttpRequest
-                .newBuilder(URI.create(baseUri + nameCoin))
-                .header("accept", "application/json")
-                .build();
+        do { //Gambiarra pq essa api fica dizendo que excedeu o limit de requisições
+            HttpClient client = HttpClient.newHttpClient();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpRequest request = HttpRequest
+                    .newBuilder(URI.create(BASE_URI + nameCoin))
+                    .header("accept", "application/json")
+                    .build();
+
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        } while (response.body().contains("exceeded"));
 
         logger.info("asset response >>> {}", response.body());
 
@@ -60,16 +67,20 @@ public class HttpRequestAdapter implements HttpPort {
     @Override
     public CriptoHistory getAssetHistory(Coin coin) throws IOException, InterruptedException {
 
-        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response;
 
-        String filter = "interval=d1&start=1617753600000&end=1617753601000";
+        do { //Gambiarra pq essa api fica dizendo que excedeu o limit de requisições
+            HttpClient client = HttpClient.newHttpClient();
 
-        HttpRequest request = HttpRequest
-                .newBuilder(URI.create(String.format("%s%s/history?%s", baseUri, coin.getId(), filter)))
-                .header("accept", "application/json")
-                .build();
+            String filter = "interval=d1&start=1617753600000&end=1617753601000";
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpRequest request = HttpRequest
+                    .newBuilder(URI.create(String.format("%s%s/history?%s", BASE_URI, coin.getId(), filter)))
+                    .header("accept", "application/json")
+                    .build();
+
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        } while (response.body().contains("exceeded"));
 
         logger.info("history response >>> {}", response.body());
 

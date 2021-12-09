@@ -5,7 +5,7 @@ import com.global.challenge.domain.Coin;
 
 import java.io.IOException;
 
-public interface HttpPort {
+public interface HttpCoincapPort {
 
     Coin getAssetId(final String nameCoin) throws IOException, InterruptedException;
 
