@@ -1,11 +1,7 @@
 package com.global.challenge.services;
 
-import com.global.challenge.adapters.io.csv.response.WalletCoin;
 import com.global.challenge.domain.Coin;
-import com.global.challenge.domain.CoinSymbol;
-import com.global.challenge.domain.WalletInfo;
 import com.global.challenge.helpers.AssetCalculator;
-import com.global.challenge.ports.outgoing.HttpCoincapPort;
 import com.global.challenge.ports.outgoing.IoFileReaderPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,9 +10,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 @Service
 public class AssetService {
@@ -24,16 +21,15 @@ public class AssetService {
     Logger logger = LoggerFactory.getLogger(AssetService.class);
 
     @Autowired
-    private HttpCoincapPort httpCoincapPort;
-
-    @Autowired
     private IoFileReaderPort ioFileReaderPort;
 
-    public String getAssetInfo() throws IOException, InterruptedException {
+    public String getAssetInfo() throws IOException, InterruptedException, ExecutionException {
 
         Set<String> files = ioFileReaderPort.listFilesFromResources("src/main/resources");
 
         List<Coin> coins = new ArrayList<>();
+
+        Future<List<Coin>> future = null;
 
         for (String file : files) {
 
@@ -41,43 +37,41 @@ public class AssetService {
                 continue;
             }
 
-            List<WalletCoin> walletCoins = ioFileReaderPort.readFileData(file);
-
-            walletCoins.forEach(walletCoin -> {
-                try {
-                    Coin coin = httpCoincapPort.getAssetId(CoinSymbol.valueOf(walletCoin.getSymbol()).getValue());
-                    coin.setWalletInfo(new WalletInfo(walletCoin));
-                    coins.add(coin);
-                } catch (IOException | InterruptedException e) {
-                    e.printStackTrace();
-                }
-            });
-
-            logger.info("====== COINS =========");
-
-            coins.forEach(coin -> {
-                logger.info("Id - {}", coin.getId());
-                logger.info("Price - {}", coin.getPriceUsd());
-                logger.info("Last Price - {}", coin.getHistory().get(0).getPriceUsd());
-            });
+            //Assync Method Utilizing ThreadPoolTaskExecutor (pool size = 3)
+            future = ioFileReaderPort.getCoinList(coins, file);
         }
 
-        AssetCalculator calculator = new AssetCalculator(coins);
-        String total = calculator.getTotal();
-        String bestAsset = calculator.getBestAsset();
-        String bestPerformance = calculator.getBestPerformance();
-        String worstAsset = calculator.getWorstAsset();
-        String worstPerformance = calculator.getWorstPerformance();
+        String calculationResult;
 
-        var calculationResult = String.format(
-                "total = %s, best_asset = %s, best_performance = %s, worst_asset = %s, worst_performance = %s",
-                total,
-                bestAsset,
-                bestPerformance,
-                worstAsset,
-                worstPerformance);
+        while (true) {
+            if (future != null && future.isDone()) {
+                logger.info("Result from asynchronous process - " + future.get());
 
-        logger.info("final result - {}", calculationResult);
+                var allCoins = future.get();
+
+                AssetCalculator calculator = new AssetCalculator(allCoins);
+                String total = calculator.getTotal();
+                String bestAsset = calculator.getBestAsset();
+                String bestPerformance = calculator.getBestPerformance();
+                String worstAsset = calculator.getWorstAsset();
+                String worstPerformance = calculator.getWorstPerformance();
+
+                calculationResult = String.format(
+                        "total = %s, best_asset = %s, best_performance = %s, worst_asset = %s, worst_performance = %s",
+                        total,
+                        bestAsset,
+                        bestPerformance,
+                        worstAsset,
+                        worstPerformance);
+
+                logger.info("final result - {}", calculationResult);
+
+                break;
+            }
+
+            logger.info("Waiting for treads...");
+            Thread.sleep(200);
+        }
 
         return calculationResult;
     }
