@@ -8,7 +8,6 @@ import com.global.challenge.domain.History;
 import com.global.challenge.ports.outgoing.HttpCoincapPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -22,33 +21,24 @@ import java.util.stream.Collectors;
 @Component
 public class HttpCoincapRequestAdapter implements HttpCoincapPort {
 
-    Logger logger = LoggerFactory.getLogger(HttpCoincapRequestAdapter.class);
-
-    @Autowired
-    ObjectMapper objectMapper = new ObjectMapper();
+    private static final Logger logger = LoggerFactory.getLogger(HttpCoincapRequestAdapter.class);
 
     private final String BASE_URI = "https://api.coincap.io/v2/assets/";
 
     @Override
     public Coin getAssetId(final String nameCoin) throws IOException, InterruptedException {
 
-        HttpResponse<String> response;
+        String body;
 
-        do { //Gambiarra pq essa api fica dizendo que excedeu o limit de requisições
-            HttpClient client = HttpClient.newHttpClient();
+        do {
+            body = getStringHttpResponse(BASE_URI + nameCoin);
+        } while (body.contains("exceeded"));
 
-            HttpRequest request = HttpRequest
-                    .newBuilder(URI.create(BASE_URI + nameCoin))
-                    .header("accept", "application/json")
-                    .build();
+        logger.info("asset response >>> {}", body);
 
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        ObjectMapper objectMapper = new ObjectMapper();
 
-        } while (response.body().contains("exceeded"));
-
-        logger.info("asset response >>> {}", response.body());
-
-        Coin coin = new Coin(objectMapper.readValue(response.body(), CriptoCoin.class).getData());
+        Coin coin = new Coin(objectMapper.readValue(body, CriptoCoin.class).getData());
 
         CriptoHistory criptoHistory = getAssetHistory(coin);
 
@@ -58,32 +48,40 @@ public class HttpCoincapRequestAdapter implements HttpCoincapPort {
                 .map(History::new)
                 .collect(Collectors.toList());
 
-
         coin.setHistory(listHistory);
 
         return coin;
     }
 
     @Override
-    public CriptoHistory getAssetHistory(Coin coin) throws IOException, InterruptedException {
+    public String getStringHttpResponse(final String url) throws IOException, InterruptedException {
 
         HttpResponse<String> response;
+        HttpClient client = HttpClient.newHttpClient();
 
-        do { //Gambiarra pq essa api fica dizendo que excedeu o limit de requisições
-            HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest
+                .newBuilder(URI.create(url))
+                .header("accept", "application/json")
+                .build();
 
+        response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();
+    }
+
+    @Override
+    public CriptoHistory getAssetHistory(final Coin coin) throws IOException, InterruptedException {
+
+        String body;
+
+        do {
             String filter = "interval=d1&start=1617753600000&end=1617753601000";
+            body = getStringHttpResponse(String.format("%s%s/history?%s", BASE_URI, coin.getId(), filter));
+        } while (body.contains("exceeded"));
 
-            HttpRequest request = HttpRequest
-                    .newBuilder(URI.create(String.format("%s%s/history?%s", BASE_URI, coin.getId(), filter)))
-                    .header("accept", "application/json")
-                    .build();
+        logger.info("history response >>> {}", body);
 
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        } while (response.body().contains("exceeded"));
+        ObjectMapper objectMapper = new ObjectMapper();
 
-        logger.info("history response >>> {}", response.body());
-
-        return objectMapper.readValue(response.body(), CriptoHistory.class);
+        return objectMapper.readValue(body, CriptoHistory.class);
     }
 }

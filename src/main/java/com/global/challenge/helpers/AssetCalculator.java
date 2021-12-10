@@ -1,7 +1,6 @@
 package com.global.challenge.helpers;
 
 import com.global.challenge.domain.Coin;
-import com.global.challenge.domain.History;
 import lombok.Data;
 
 import java.util.*;
@@ -48,15 +47,5 @@ public class AssetCalculator {
                 .min(Comparator.comparingDouble(Coin::getPerformance))
                 .map(Coin::getPerformance)
                 .get());
-    }
-
-    public Double getCoinPosition(Coin coin) {
-        Optional<History> optionalHistory = coin.getHistory().stream().findFirst();
-        if (optionalHistory.isPresent()) {
-            History history = optionalHistory.get();
-            return Double.valueOf(history.getPriceUsd());
-        }
-
-        return 1.0;
     }
 }

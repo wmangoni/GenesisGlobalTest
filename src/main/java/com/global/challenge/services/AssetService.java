@@ -18,18 +18,16 @@ import java.util.concurrent.Future;
 @Service
 public class AssetService {
 
-    Logger logger = LoggerFactory.getLogger(AssetService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AssetService.class);
 
     @Autowired
     private IoFileReaderPort ioFileReaderPort;
 
-    public String getAssetInfo() throws IOException, InterruptedException, ExecutionException {
+    public String generateReport() throws IOException, InterruptedException, ExecutionException {
 
         Set<String> files = ioFileReaderPort.listFilesFromResources("src/main/resources");
 
-        List<Coin> coins = new ArrayList<>();
-
-        Future<List<Coin>> future = null;
+        List<Future<List<Coin>>> futures = new ArrayList<>();
 
         for (String file : files) {
 
@@ -38,40 +36,43 @@ public class AssetService {
             }
 
             //Assync Method Utilizing ThreadPoolTaskExecutor (pool size = 3)
-            future = ioFileReaderPort.getCoinList(coins, file);
+            futures.add(ioFileReaderPort.getCoinList(file));
         }
 
-        String calculationResult;
+        String calculationResult = "";
 
-        while (true) {
+        List<Coin> allCoins = new ArrayList<>();
+
+        var count = futures.size();
+
+        while (count > 0) {
+            var future = futures.get(count-1);
             if (future != null && future.isDone()) {
                 logger.info("Result from asynchronous process - " + future.get());
-
-                var allCoins = future.get();
-
-                AssetCalculator calculator = new AssetCalculator(allCoins);
-                String total = calculator.getTotal();
-                String bestAsset = calculator.getBestAsset();
-                String bestPerformance = calculator.getBestPerformance();
-                String worstAsset = calculator.getWorstAsset();
-                String worstPerformance = calculator.getWorstPerformance();
-
-                calculationResult = String.format(
-                        "total = %s, best_asset = %s, best_performance = %s, worst_asset = %s, worst_performance = %s",
-                        total,
-                        bestAsset,
-                        bestPerformance,
-                        worstAsset,
-                        worstPerformance);
-
-                logger.info("final result - {}", calculationResult);
-
-                break;
+                allCoins.addAll(future.get());
+                count--;
             }
 
             logger.info("Waiting for treads...");
-            Thread.sleep(200);
+            Thread.sleep(80);
         }
+
+        AssetCalculator calculator = new AssetCalculator(allCoins);
+        String total = calculator.getTotal();
+        String bestAsset = calculator.getBestAsset();
+        String bestPerformance = calculator.getBestPerformance();
+        String worstAsset = calculator.getWorstAsset();
+        String worstPerformance = calculator.getWorstPerformance();
+
+        calculationResult = String.format(
+                "total = %s, best_asset = %s, best_performance = %s, worst_asset = %s, worst_performance = %s",
+                total,
+                bestAsset,
+                bestPerformance,
+                worstAsset,
+                worstPerformance);
+
+        logger.info("final result - {}", calculationResult);
 
         return calculationResult;
     }

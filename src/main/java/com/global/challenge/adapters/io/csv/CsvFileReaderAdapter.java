@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 @Component
 public class CsvFileReaderAdapter implements IoFileReaderPort {
 
-    Logger logger = LoggerFactory.getLogger(CsvFileReaderAdapter.class);
+    private static final Logger logger = LoggerFactory.getLogger(CsvFileReaderAdapter.class);
 
     @Autowired
     private HttpCoincapPort httpCoincapPort;
@@ -82,13 +82,15 @@ public class CsvFileReaderAdapter implements IoFileReaderPort {
     }
 
     @Async("fileExecutor")
-    public Future<List<Coin>> getCoinList(List<Coin> coins, String file) throws IOException {
+    public Future<List<Coin>> getCoinList(String file) throws IOException {
 
         logger.info("Execute method asynchronously - " + Thread.currentThread().getName());
 
         logger.info("====== TIME ======== " + new Date());
 
         List<WalletCoin> walletCoins = readFileData(file);
+
+        List<Coin> coins = new ArrayList<>();
 
         walletCoins.forEach(walletCoin -> {
             try {

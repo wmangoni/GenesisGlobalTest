@@ -14,5 +14,5 @@ public interface IoFileReaderPort {
 
     Set<String> listFilesFromResources(final String dir) throws IOException;
 
-    Future<List<Coin>> getCoinList(List<Coin> coins, String file) throws IOException;
+    Future<List<Coin>> getCoinList(String file) throws IOException;
 }

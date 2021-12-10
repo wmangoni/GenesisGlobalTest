@@ -9,5 +9,7 @@ public interface HttpCoincapPort {
 
     Coin getAssetId(final String nameCoin) throws IOException, InterruptedException;
 
-    CriptoHistory getAssetHistory(Coin coin) throws IOException, InterruptedException;
+    String getStringHttpResponse(final String url) throws IOException, InterruptedException;
+
+    CriptoHistory getAssetHistory(final Coin coin) throws IOException, InterruptedException;
 }

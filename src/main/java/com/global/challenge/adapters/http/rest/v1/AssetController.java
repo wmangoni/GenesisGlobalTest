@@ -15,15 +15,15 @@ import java.util.concurrent.ExecutionException;
 @RequestMapping("/assets")
 public class AssetController {
 
-    Logger logger = LoggerFactory.getLogger(AssetController.class);
+    private static final Logger logger = LoggerFactory.getLogger(AssetController.class);
 
     @Autowired
     private AssetService assetService;
 
     @GetMapping
-    public String findBitcoin() {
+    public String generateReport() {
         try {
-            return assetService.getAssetInfo();
+            return assetService.generateReport();
         } catch (IOException | InterruptedException | ExecutionException e) {
             logger.error(e.getMessage());
             e.printStackTrace();
