@@ -39,8 +39,6 @@ public class AssetService {
             futures.add(ioFileReaderPort.getCoinList(file));
         }
 
-        String calculationResult = "";
-
         List<Coin> allCoins = new ArrayList<>();
 
         var count = futures.size();
@@ -64,7 +62,7 @@ public class AssetService {
         String worstAsset = calculator.getWorstAsset();
         String worstPerformance = calculator.getWorstPerformance();
 
-        calculationResult = String.format(
+        String calculationResult = String.format(
                 "total = %s, best_asset = %s, best_performance = %s, worst_asset = %s, worst_performance = %s",
                 total,
                 bestAsset,
